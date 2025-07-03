@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">All Notes</h2>
+
+    {% if notes %}
+        <div class="row">
+            {% for note in notes %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ note.title }}</h5>
+
+                            {% if note.description %}
+                                <p class="card-text">{{ note.description|truncatewords:20 }}</p>
+                            {% else %}
+                                <p class="card-text text-muted">No description available.</p>
+                            {% endif %}
+
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Subject: {{ note.subject.name }}<br>
+                                    Uploaded: {{ note.uploaded_at|date:"M d, Y" }}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex gap-2 w-100">
+                                <a href="{% url 'view_pdf' note.id %}" class="btn btn-primary flex-fill">
+                                    <i data-feather="eye" class="me-1"></i> View
+                                </a>
+                                <a href="{{ note.file.url }}" class="btn btn-primary flex-fill" download>
+                                    <i data-feather="download" class="me-1"></i> Download Note
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No notes available.</p>
+    {% endif %}
+</div>
+{% endblock %}

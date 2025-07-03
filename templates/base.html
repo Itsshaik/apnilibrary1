@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta name="google-adsense-account" content="ca-pub-4287580530993227">
+    <link rel="icon" href="{% static 'favicon.png' %}" type="image/png">
+    <meta name="google-site-verification" content="pQJiiciud6C3Ixe0C8uoEofx8Zx_ThKX1R6ihMnGm-I" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %} Free Notes of all subjects {% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4287580530993227"
+     crossorigin="anonymous"></script>
+<!-- Adds
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-4287580530993227"
+     data-ad-slot="7243771980"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script> -->
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'index' %}">
+                <i data-feather="book-open" class="me-2"></i>
+              FREE NOTES OF ALL CLASSES
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="navbar-brand" href="{% url 'index' %}">
+                            <i data-feather="home" class="me-1"></i>
+                            Home
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center">
+                    <!-- Search Form -->
+                    <form class="d-flex me-3" method="GET" action="{% url 'search' %}">
+                        <div class="input-group">
+                            <input class="form-control" type="search" name="q" placeholder="Search notes..."
+                                   value="{{ request.GET.q }}"
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i data-feather="search"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- User Menu
+                    {% if current_user.is_authenticated %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i data-feather="user" class="me-1"></i>
+                                {{ current_user.username }}
+                                {% if current_user.is_admin %}
+                                    <span class="badge bg-primary ms-1">Admin</span>
+                                {% endif %}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% if current_user.is_admin %}
+                                    <li><h6 class="dropdown-header">Admin Actions</h6></li>
+                                    <li><span class="dropdown-item-text"><small class="text-muted">You can create and manage content</small></span></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+                                <li>
+                                    <a href="{% url 'login' %}" class="btn btn-outline-primary">
+                                        <i data-feather="log-out" class="me-2"></i>
+                                        Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <div class="btn-group">
+                            <a href="{% url 'login'% }" class="btn btn-outline-primary">
+                                <i data-feather="log-in" class="me-1"></i>
+                                Login
+                            </a>
+                            <a href="{% url 'register' % }" class="btn btn-primary">
+                                <i data-feather="user-plus" class="me-1"></i>
+                                Register
+                            </a>
+                        </div>
+                    {% endif %} -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4">
+        <!-- Flash Messages -->
+        {% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i data-feather="book" class="me-2"></i>
+                Notes Portal - @created by smtdevops
+
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+
+    <!-- Initialize Feather Icons -->
+    <script>
+        feather.replace();
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

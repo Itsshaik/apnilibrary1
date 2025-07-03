@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">All Subjects</h2>
+
+    {% if subjects %}
+        <div class="row">
+            {% for subject in subjects %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ subject.name }}</h5>
+                            {% if subject.description %}
+                                <p class="card-text">{{ subject.description }}</p>
+                            {% endif %}
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Class: {{ subject.class_ref.name }}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'subject_detail' subject.id %}" class="btn btn-primary w-100">
+                                <i data-feather="external-link" class="me-1"></i> Open Subject
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No subjects available.</p>
+    {% endif %}
+</div>
+{% endblock %}

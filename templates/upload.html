@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Note - {{ subject.name }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('class_detail', class_id=subject.class_id) }}">{{ subject.class_ref.name }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('subject_detail', subject_id=subject.id) }}">{{ subject.name }}</a></li>
+        <li class="breadcrumb-item active">Upload Note</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    <i data-feather="upload" class="me-2"></i>
+                    Upload PDF Note
+                </h2>
+                <p class="text-muted mb-0">
+                    Upload to: {{ subject.class_ref.name }} → {{ subject.name }}
+                </p>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('upload_note', subject_id=subject.id) }}" enctype="multipart/form-data" id="uploadForm">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Note Title</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="Enter a title for your note (optional - will use filename if empty)">
+                        <div class="form-text">If left empty, the filename will be used as the title.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                placeholder="Add a description for your note (optional)"></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="file" class="form-label">PDF File *</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".pdf" required>
+                        <div class="form-text">
+                            <i data-feather="info" class="me-1"></i>
+                            Only PDF files are allowed. Maximum file size: 50MB.
+                        </div>
+                    </div>
+                    
+                    <!-- File Preview -->
+                    <div id="filePreview" class="mb-3" style="display: none;">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i data-feather="file" class="me-2"></i>
+                                    Selected File
+                                </h6>
+                                <div id="fileInfo"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('subject_detail', subject_id=subject.id) }}" class="btn btn-secondary">
+                            <i data-feather="arrow-left" class="me-1"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i data-feather="upload" class="me-1"></i>
+                            Upload Note
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Upload Guidelines -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="help-circle" class="me-2"></i>
+                    Upload Guidelines
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><strong>File Format:</strong> Only PDF files are accepted</li>
+                    <li><strong>File Size:</strong> Maximum 50MB per file</li>
+                    <li><strong>File Names:</strong> Use descriptive names for better organization</li>
+                    <li><strong>Duplicates:</strong> You can upload multiple files with the same name</li>
+                    <li><strong>Security:</strong> All files are scanned and validated before storage</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('file');
+    const filePreview = document.getElementById('filePreview');
+    const fileInfo = document.getElementById('fileInfo');
+    const titleInput = document.getElementById('title');
+    const submitBtn = document.getElementById('submitBtn');
+    const uploadForm = document.getElementById('uploadForm');
+    
+    // File selection handler
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        
+        if (file) {
+            // Validate file type
+            if (file.type !== 'application/pdf') {
+                alert('Please select a PDF file only.');
+                fileInput.value = '';
+                filePreview.style.display = 'none';
+                return;
+            }
+            
+            // Validate file size (50MB = 50 * 1024 * 1024 bytes)
+            const maxSize = 50 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('File size exceeds 50MB limit. Please select a smaller file.');
+                fileInput.value = '';
+                filePreview.style.display = 'none';
+                return;
+            }
+            
+            // Show file preview
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            fileInfo.innerHTML = `
+                <p class="mb-1"><strong>Name:</strong> ${file.name}</p>
+                <p class="mb-1"><strong>Size:</strong> ${fileSize} MB</p>
+                <p class="mb-0"><strong>Type:</strong> PDF Document</p>
+            `;
+            filePreview.style.display = 'block';
+            
+            // Auto-fill title if empty
+            if (!titleInput.value.trim()) {
+                const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+                titleInput.value = fileName;
+            }
+            
+            // Re-initialize feather icons
+            feather.replace();
+        } else {
+            filePreview.style.display = 'none';
+        }
+    });
+    
+    // Form submission handler
+    uploadForm.addEventListener('submit', function(e) {
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            e.preventDefault();
+            alert('Please select a PDF file to upload.');
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Uploading...
+        `;
+        
+        // Optional: Show progress (if you want to implement progress tracking)
+        // This would require additional JavaScript and server-side support
+    });
+    
+    // Drag and drop functionality
+    const dropZone = document.querySelector('.card-body');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight(e) {
+        dropZone.classList.add('border-primary', 'bg-light');
+    }
+    
+    function unhighlight(e) {
+        dropZone.classList.remove('border-primary', 'bg-light');
+    }
+    
+    dropZone.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+});
+</script>
+{% endblock %}

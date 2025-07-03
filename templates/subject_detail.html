@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject.name }} - Notes Portal{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'class_detail' subject.class_ref.id %}">{{ subject.class_ref.name }}</a>
+        </li>
+        <li class="breadcrumb-item active">{{ subject.name }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1><i data-feather="bookmark" class="me-2"></i> {{ subject.name }}</h1>
+                <p class="text-muted">
+                    <i data-feather="folder" class="me-1"></i> {{ subject.class_ref.name }}
+                </p>
+                {% if subject.description %}
+                    <p class="text-muted">{{ subject.description }}</p>
+                {% endif %}
+                <p class="text-muted">
+                    <small>
+                        <i data-feather="calendar" class="me-1"></i>
+                        Created {{ subject.created_at|date:"F d, Y \\a\\t h:i A" }}
+                    </small>
+                </p>
+            </div>
+            {% if user.is_authenticated and user.is_staff %}
+                <div class="btn-group" role="group">
+                    <a href="{% url 'upload_note' subject.id %}" class="btn btn-primary">
+                        <i data-feather="upload" class="me-1"></i> Upload Notes
+                    </a>
+                    <button class="btn btn-outline-danger" onclick="confirmDelete('subject', {{ subject.id }}, '{{ subject.name }}')">
+                        <i data-feather="trash-2" class="me-1"></i> Delete Subject
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-success">
+            <div class="card-body text-center">
+                <i data-feather="file-text" style="width: 32px; height: 32px;" class="mb-2"></i>
+                <h4 class="card-title">{{ notes|length }}</h4>
+                <p class="card-text">PDF Notes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-info">
+            <div class="card-body text-center">
+                <i data-feather="hard-drive" style="width: 32px; height: 32px;" class="mb-2"></i>
+                <h4 class="card-title">{{ total_size_mb|floatformat:1 }} MB</h4>
+                <p class="card-text">Total Size</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes List -->
+<div class="mb-4">
+    <h2><i data-feather="file-text" class="me-2"></i>Notes</h2>
+</div>
+
+{% if notes %}
+    <div class="row">
+        {% for note in notes %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ note.title }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i data-feather="file" class="me-1"></i> {{ note.original_filename }}
+                            </small>
+                        </p>
+                        {% if note.description %}
+                            <p class="card-text">{{ note.description|truncatechars:100 }}</p>
+                        {% endif %}
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i data-feather="hard-drive" class="me-1"></i>
+                                {{ note.file_size_mb }} MB
+                                <i data-feather="clock" class="ms-2 me-1"></i>
+                                {{ note.uploaded_at|date:"F d, Y" }}
+                            </small>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100 mb-2" role="group">
+                            <a href="{% url 'view_pdf' note.id %}" class="btn btn-primary btn-sm">
+                                <i data-feather="eye" class="me-1"></i> View
+                            </a>
+                            <a href="{% url 'download_pdf' note.id %}" class="btn btn-secondary btn-sm">
+                                <i data-feather="download" class="me-1"></i> Download
+                            </a>
+                        </div>
+                        {% if user.is_authenticated and user.is_staff %}
+                            <button class="btn btn-outline-danger btn-sm w-100" onclick="confirmDeleteNote({{ note.id }}, '{{ note.title }}')">
+                                <i data-feather="trash-2" class="me-1"></i> Delete Note
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i data-feather="file-plus" style="width: 64px; height: 64px;" class="text-muted mb-3"></i>
+        <h3 class="text-muted">No notes yet</h3>
+        <p class="text-muted">Upload your first PDF note for this subject</p>
+        {% if user.is_authenticated and user.is_staff %}
+            <a href="{% url 'upload_note' subject.id %}" class="btn btn-primary btn-lg">
+                <i data-feather="upload" class="me-2"></i> Upload Your First Note
+            </a>
+        {% else %}
+            <p class="text-muted">Only administrators can upload content.</p>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDeleteNote(noteId, noteTitle) {
+    if (confirm(`Are you sure you want to delete the note "${noteTitle}"? This action cannot be undone.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete_note/${noteId}`;
+
+        const csrfToken = '{{ csrf_token }}';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrfmiddlewaretoken';
+        input.value = csrfToken;
+        form.appendChild(input);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

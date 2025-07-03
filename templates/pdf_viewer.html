@@ -1,0 +1,284 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ presentation.title }}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+    </script>
+    <style>
+        /* General Body Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #e0e0e0;
+        }
+
+        /* Navbar Styles */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Hidden Navbar */
+        nav.hidden {
+            transform: translateY(-100%);
+        }
+
+        nav .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00d9ff;
+            text-shadow: 0 0 8px #00d9ff;
+        }
+
+        nav ul {
+            list-style-type: none;
+            display: flex;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav ul li {
+            margin: 0 10px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        /* Page Indicator */
+        #page-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.6), rgba(0, 0, 255, 0.6));
+            color: white;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 20%;
+            box-shadow:
+                0 0 15px rgba(0, 255, 255, 0.5),
+                0 0 30px rgba(0, 0, 255, 0.5),
+                inset 0 0 10px rgba(255, 255, 255, 0.3);
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Progress Bar Styles */
+        #progress-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 100px;
+            background: rgba(0, 0, 0, 3);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            color: #fff;
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #progress-container h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        #progress-bar {
+            margin-top: 10px;
+            width: 80%;
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidde;
+            position: relative;
+        }
+
+        #progress-bar div {
+            height: 100%;
+            width: 0%;
+            background: #00d9ff;
+            transition: width 0.2s ease;
+        }
+
+        /* PDF Viewer Styles */
+        #pdf-viewer {
+            flex: 1;
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        canvas {
+            margin-bottom: 20px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <nav id="navbar" class="hidden">
+        <div class="logo">PDF Viewer</div>
+        <div id="page-indicator">1</div>
+        <ul>
+
+        </ul>
+    </nav>
+
+    <!-- Progress Bar -->
+    <div id="progress-container">
+        <h3>Loading PDF...</h3>
+        <div id="progress-bar"><div></div></div>
+    </div>
+
+    <div id="pdf-viewer"></div>
+
+    <script>
+        const url = "{% url 'serve_pdf' note.id %}";
+        const navbar = document.getElementById('navbar');
+        const viewer = document.getElementById('pdf-viewer');
+        const pageIndicator = document.getElementById('page-indicator');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.querySelector('#progress-bar div');
+
+        let hideNavbarTimeout;
+
+        // Show Navbar
+        const showNavbar = () => {
+            navbar.classList.remove('hidden');
+            if (hideNavbarTimeout) clearTimeout(hideNavbarTimeout);
+            hideNavbarTimeout = setTimeout(() => {
+                navbar.classList.add('hidden');
+            }, 3000); // Auto-hide after 3 seconds
+        };
+
+        viewer.addEventListener('click', showNavbar);
+
+        // PDF Rendering with Progress Bar
+        const loadingTask = pdfjsLib.getDocument(url);
+        progressContainer.style.display = 'flex';
+
+        loadingTask.onProgress = function(progressData) {
+            const percentLoaded = (progressData.loaded / progressData.total) * 100;
+            progressBar.style.width = `${percentLoaded}%`;
+        };
+
+        loadingTask.promise.then(function (pdf) {
+            const numPages = pdf.numPages;
+            let currentPage = 1;
+
+            const renderPage = async (pageNum) => {
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1 });
+                const containerWidth = viewer.clientWidth - 20;
+                const scale = containerWidth / viewport.width;
+                const scaledViewport = page.getViewport({ scale });
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = scaledViewport.width;
+                canvas.height = scaledViewport.height;
+
+                viewer.appendChild(canvas);
+                await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+            };
+
+            (async () => {
+                for (let i = 1; i <= numPages; i++) {
+                    await renderPage(i);
+                }
+                progressContainer.style.display = 'none';
+            })();
+        }).catch(error => console.error("Error loading PDF:", error))
+        viewer.addEventListener('scroll', () => {
+                const viewerHeight = viewer.clientHeight;
+                const pages = viewer.querySelectorAll('canvas');
+                pages.forEach((canvas, index) => {
+                    const rect = canvas.getBoundingClientRect();
+                    if (rect.top >= 0 && rect.top < viewerHeight /4 ) {
+                        currentPage = index + 1;
+                        pageIndicator.textContent = `${currentPage}`;
+                    }
+                });
+            });
+
+
+
+     // Home page URL
+
+    // Handle Back Button Press for Mobile Users (Kodular WebViewer)
+    //window.addEventListener("popstate", function(event) {
+        //window.location.href = homePageURL; // Redirect to Home
+   // });
+
+    // Handle Back Button in WebView
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Backspace" || event.keyCode === 8) {
+            window.location.href = homePageURL; // Redirect to Home
+        }
+    });
+
+    // Handle Swipe Back Gesture for Mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener("touchstart", function(event) {
+        touchStartX = event.touches[0].clientX;
+    });
+
+    document.addEventListener("touchend", function(event) {
+        touchEndX = event.changedTouches[0].clientX;
+
+        // Detect a swipe-right gesture (common for going back)
+        if (touchEndX - touchStartX > 100) {
+            window.location.href = homePageURL; // Redirect to Home
+        }
+    });
+
+
+    </script>
+</body>
+</html>
+
+
